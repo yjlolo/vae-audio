@@ -100,60 +100,47 @@ class MinMaxNorm:
             return nom
 
 
-class ChunkDivision:
-    def __init__(self, duration=0.5, sr=22050, n_fft=2048, hop_size=735, reverse=False, fix_n_chunk=False):
+class SpecChunking:
+    def __init__(self, duration=0.5, sr=22050, hop_size=735, reverse=False):
+        """
+        Slice spectrogram into non-overlapping chunks. Discard chunks shorter than the specified duration.
+        :params duration: the duration (in sec.) of each spectrogram chunk
+        :params sr: sampling frequency used to read waveform; used to calculate the size of each spectrogram chunk
+        :parms hop_size: hop size used to derive spectrogram; used to calculate the size of each spectrogram chunk
+        :params reverse: reverse the spectrogram before chunking;
+                         set True if the end is more important than the begin of spectrogram
+        TODO:
+            [] Allow an input argument to indicate the overlapping amount between chunks
+        """
         self.duration = duration
         self.sr = sr
-        self.n_fft = n_fft
         self.hop_size = hop_size
-        self.chunk_length_frame = int(sr * duration)
-        self.chunk_length_window = self.chunk_length_frame // hop_size
+        self.chunk_size = int(sr * duration) // hop_size
         self.reverse = reverse
-        self.fix_n_chunk = fix_n_chunk
 
-    def __call__(self, x, ):
-        dim = 0 if isinstance(x, torch.Tensor) else 1
+    def __call__(self, x):
+        time_dim = 1  # assume input spectrogram with shape n_freqBand * n_contextWin
+        n_contextWin = x.shape[time_dim]  # context window size of the input spectrogram
+        # TODO: overlapping window size; with the amount of overlap as an input argument
+        indices = np.arange(self.chunk_size, n_contextWin, self.chunk_size)  # currently non-overlapping chunking
 
-        num_window = x.shape[dim]
-        indices = np.arange(self.chunk_length_window, num_window, self.chunk_length_window)
+        # reverse to keep the end content of spectrogram intact in the later discard
+        # this is only used when the end is more important than the begin of spectrogram
         if self.reverse:
-            x = np.flip(x, dim)
-        x_chunk = np.split(x, indices_or_sections=indices, axis=dim)
+            x = np.flip(x, time_dim)
+
+        x_chunk = np.split(x, indices_or_sections=indices, axis=time_dim)
+
+        # reverse back if self.reverse=True
         if self.reverse:
-            x_chunk = [np.flip(i, dim) for i in x_chunk[::-1]]
-        x_chunk = [x_i for x_i in x_chunk if x_i.shape[dim] == self.chunk_length_window]
+            x_chunk = [np.flip(i, time_dim) for i in x_chunk[::-1]]
 
-        if self.fix_n_chunk:
-            return np.array(x_chunk)
-        else:
-            return x_chunk
+        # discard those short chunks
+        x_chunk = [x_i for x_i in x_chunk if x_i.shape[time_dim] == self.chunk_size]
+
+        return np.array(x_chunk)
 
 
-class TransposeNumpy:
+class LoadNumpyAry:
     def __call__(self, x):
-        if isinstance(x, list):
-            return [transposeNumpy(x_i) for x_i in x]
-        else:
-            return transposeNumpy(x)
-
-
-def transposeNumpy(x):
-    return x.T
-
-
-class ToTensor:
-    def __call__(self, x):
-        if isinstance(x, list):
-            return [toTensor(x_i) for x_i in x]
-        else:
-            return toTensor(x)
-
-
-def toTensor(x):
-    return torch.from_numpy(x).type('torch.FloatTensor')
-
-
-class LoadTensor:
-    def __call__(self, x):
-
-        return torch.load(x)
+        return np.load(x)

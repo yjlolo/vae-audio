@@ -4,7 +4,7 @@ import json
 import time
 import numpy as np
 from torchvision import transforms
-import dataset as module_dataset
+import datasets as module_dataset
 import transformers as module_transformer
 
 
