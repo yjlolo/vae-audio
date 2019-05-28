@@ -120,6 +120,8 @@ class BaseTrainer:
                                 "on this machine.".format(n_gpu_use, n_gpu))
             n_gpu_use = n_gpu
         device = torch.device('cuda:0' if n_gpu_use > 0 else 'cpu')
+        if device.type == 'cuda':
+            torch.set_default_tensor_type('torch.cuda.FloatTensor')
         list_ids = list(range(n_gpu_use))
         return device, list_ids
 

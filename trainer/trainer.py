@@ -28,9 +28,13 @@ class SpecVaeTrainer(BaseTrainer):
             self.writer.add_scalar('{}'.format(metric.__name__), acc_metrics[i])
         return acc_metrics
 
+    def _reshape(self, x):
+        n_freqBand, n_contextWin = x.size(2), x.size(3)
+        return x.view(-1, 1, n_freqBand, n_contextWin)
+
     def _forward_and_computeLoss(self, x, target):
         x_recon, mu, logvar, z = self.model(x)
-        loss_recon, loss_kl = self.loss(x_recon, target)
+        loss_recon, loss_kl = self.loss(mu, logvar, x_recon, target)
         loss = loss_recon + loss_kl
         return loss, loss_recon, loss_kl
 
@@ -57,7 +61,8 @@ class SpecVaeTrainer(BaseTrainer):
         total_kl = 0
         # total_metrics = np.zeros(len(self.metrics))
         for batch_idx, (data_idx, label, data) in enumerate(self.data_loader):
-            x = data.to(self.device)
+            x = data.type('torch.FloatTensor').to(self.device)
+            x = self._reshape(x)
 
             self.optimizer.zero_grad()
             loss, loss_recon, loss_kl = self._forward_and_computeLoss(x, x)
@@ -113,7 +118,8 @@ class SpecVaeTrainer(BaseTrainer):
         # total_val_metrics = np.zeros(len(self.metrics))
         with torch.no_grad():
             for batch_idx, (data_idx, label, data) in enumerate(self.valid_data_loader):
-                x = data.to(self.device)
+                x = data.type('torch.FloatTensor').to(self.device)
+                x = self._reshape(x)
 
                 loss, loss_recon, loss_kl = self._forward_and_computeLoss(x, x)
 
