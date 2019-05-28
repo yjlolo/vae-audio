@@ -31,4 +31,4 @@ def mse_loss(output, target):
 
 
 def vae_loss(q_mu, q_logvar, output, target):
-    return mse_loss(output, target) + kld_loss(q_mu, q_logvar)
+    return mse_loss(output, target), kld_loss(q_mu, q_logvar)

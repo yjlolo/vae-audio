@@ -4,7 +4,7 @@ from torchvision.utils import make_grid
 from base import BaseTrainer
 
 
-class Trainer(BaseTrainer):
+class SpecVaeTrainer(BaseTrainer):
     """
     Trainer class
 
@@ -13,7 +13,7 @@ class Trainer(BaseTrainer):
     """
     def __init__(self, model, loss, metrics, optimizer, config,
                  data_loader, valid_data_loader=None, lr_scheduler=None):
-        super(Trainer, self).__init__(model, loss, metrics, optimizer, config)
+        super(SpecVaeTrainer, self).__init__(model, loss, metrics, optimizer, config)
         self.config = config
         self.data_loader = data_loader
         self.valid_data_loader = valid_data_loader
@@ -27,6 +27,12 @@ class Trainer(BaseTrainer):
             acc_metrics[i] += metric(output, target)
             self.writer.add_scalar('{}'.format(metric.__name__), acc_metrics[i])
         return acc_metrics
+
+    def _forward_and_computeLoss(self, x, target):
+        x_recon, mu, logvar, z = self.model(x)
+        loss_recon, loss_kl = self.loss(x_recon, target)
+        loss = loss_recon + loss_kl
+        return loss, loss_recon, loss_kl
 
     def _train_epoch(self, epoch):
         """
@@ -47,20 +53,23 @@ class Trainer(BaseTrainer):
         self.model.train()
 
         total_loss = 0
-        total_metrics = np.zeros(len(self.metrics))
-        for batch_idx, (data, target) in enumerate(self.data_loader):
-            data, target = data.to(self.device), target.to(self.device)
+        total_recon = 0
+        total_kl = 0
+        # total_metrics = np.zeros(len(self.metrics))
+        for batch_idx, (data_idx, label, data) in enumerate(self.data_loader):
+            x = data.to(self.device)
 
             self.optimizer.zero_grad()
-            output = self.model(data)
-            loss = self.loss(output, target)
+            loss, loss_recon, loss_kl = self._forward_and_computeLoss(x, x)
             loss.backward()
             self.optimizer.step()
 
             self.writer.set_step((epoch - 1) * len(self.data_loader) + batch_idx)
             self.writer.add_scalar('loss', loss.item())
             total_loss += loss.item()
-            total_metrics += self._eval_metrics(output, target)
+            total_recon += loss_recon.item()
+            total_kl += loss_kl.item()
+            # total_metrics += self._eval_metrics(output, target)
 
             if batch_idx % self.log_step == 0:
                 self.logger.debug('Train Epoch: {} [{}/{} ({:.0f}%)] Loss: {:.6f}'.format(
@@ -69,11 +78,14 @@ class Trainer(BaseTrainer):
                     self.data_loader.n_samples,
                     100.0 * batch_idx / len(self.data_loader),
                     loss.item()))
-                self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
+                # TODO: visualize input/reconstructed spectrograms in TensorBoard
+                # self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
 
         log = {
             'loss': total_loss / len(self.data_loader),
-            'metrics': (total_metrics / len(self.data_loader)).tolist()
+            'loss_recon': total_recon / len(self.data_loader),
+            'loss_kl': total_kl / len(self.data_loader)
+            # 'metrics': (total_metrics / len(self.data_loader)).tolist()
         }
 
         if self.do_validation:
@@ -96,19 +108,22 @@ class Trainer(BaseTrainer):
         """
         self.model.eval()
         total_val_loss = 0
-        total_val_metrics = np.zeros(len(self.metrics))
+        total_val_recon = 0
+        total_val_kl = 0
+        # total_val_metrics = np.zeros(len(self.metrics))
         with torch.no_grad():
-            for batch_idx, (data, target) in enumerate(self.valid_data_loader):
-                data, target = data.to(self.device), target.to(self.device)
+            for batch_idx, (data_idx, label, data) in enumerate(self.valid_data_loader):
+                x = data.to(self.device)
 
-                output = self.model(data)
-                loss = self.loss(output, target)
+                loss, loss_recon, loss_kl = self._forward_and_computeLoss(x, x)
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.writer.add_scalar('loss', loss.item())
                 total_val_loss += loss.item()
-                total_val_metrics += self._eval_metrics(output, target)
-                self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
+                total_val_recon += loss_recon.item()
+                total_val_kl += loss_kl.item()
+                # total_val_metrics += self._eval_metrics(output, target)
+                # self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
@@ -116,5 +131,7 @@ class Trainer(BaseTrainer):
 
         return {
             'val_loss': total_val_loss / len(self.valid_data_loader),
-            'val_metrics': (total_val_metrics / len(self.valid_data_loader)).tolist()
+            'val_loss_recon': total_val_recon / len(self.valid_data_loader),
+            'val_loss_kl': total_val_kl / len(self.valid_data_loader)
+            # 'val_metrics': (total_val_metrics / len(self.valid_data_loader)).tolist()
         }
