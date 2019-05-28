@@ -3,7 +3,7 @@ from torch.utils.data import Dataset
 
 
 class CollectData(Dataset):
-    def __init__(self, path_to_dataset, subset=None, transform=None):
+    def __init__(self, path_to_dataset, extension=['wav', 'mp3', 'npy', 'pth'], subset=None, transform=None):
         """
         Assume directory structure as:
         - dataset (the level which path_to_dataset indicates)
@@ -16,7 +16,7 @@ class CollectData(Dataset):
                 - class B
                 ...
         :param path_to_dataset: a list of path to dataset directory; thus allows multiple datasets
-        :param subset: [None, 'train', 'test']; if None, both train and test sets are loaded
+        :param subset: None|'train'|'test'; if None, both train and test sets are loaded
         :param transform: see https://pytorch.org/docs/stable/torchvision/transforms.html
         """
         assert isinstance(path_to_dataset, list), "The input path_to_dataset should be a list."
@@ -32,18 +32,17 @@ class CollectData(Dataset):
             else:
                 full_path_to_dataset.append(os.path.join(data_dir, 'testdata'))
 
-        aggr_data_path = [os.path.join(data_dir, f) for data_dir in full_path_to_dataset for f in os.listdir(data_dir)
-                                                                                            if 'wav' in f or 'mp3' in f]
         aggr_data_path = []
         aggr_label = []
         for data_dir in full_path_to_dataset:
             for subclass in os.listdir(data_dir):
                 for f in os.listdir(os.path.join(data_dir, subclass)):
-                    if '.wav' in f or '.mp3' in f:
+                    if any(ext in f for ext in extension):
                         aggr_data_path.append(os.path.join(data_dir, subclass, f))
                         aggr_label.append(subclass)
 
         self.path_to_dataset = path_to_dataset
+        self.extension = extension
         self.subset = subset
         self.transform = transform
         self.path_to_data = aggr_data_path

@@ -4,7 +4,8 @@
     "dataset": {
         "type": "CollectData",
         "args": {
-            "path_to_dataset": ["/data/yinjyun/projects/vae-audio/dataset/myAudioDataset/audio"]
+            "path_to_dataset": ["/data/yinjyun/projects/vae-audio/dataset/myAudioDataset/audio"],
+            "extension": ["wav", "npy"]
         }
     },
     "transform1": {

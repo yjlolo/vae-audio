@@ -1,5 +1,7 @@
+from torch.utils.data import Dataset
 from torchvision import datasets, transforms
 from base import BaseDataLoader
+from dataset import transformers
 
 
 class MnistDataLoader(BaseDataLoader):
