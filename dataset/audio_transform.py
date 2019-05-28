@@ -58,9 +58,12 @@ def main(config):
         print("Transforming %d-th audio ... %s" % (k, audio_path))
         idx, y, x = d[k]
 
+        split = audio_path.split('/')[-3]
+        file_savePath = os.path.join(processed_audio_savePath, split, y)
+        if not os.path.exists(file_savePath):
+            os.makedirs(file_savePath)
         fname = audio_path.split('/')[-1].split('.')[0]  # replace this buggy and ugly style with Path lib
-        fpath = os.path.join(processed_audio_savePath, fname)
-        np.save(fpath, x)
+        np.save(os.path.join(file_savePath, fname), x)
 
     print("Processing time: %.2f seconds" % (time.time() - start_time))
 
