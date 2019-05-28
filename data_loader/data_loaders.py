@@ -41,12 +41,12 @@ class CollectDataLoader(BaseDataLoader):
 
 if __name__ == '__main__':
     # specify subset as train to load the training data only
-    train_dl = CollectDataLoader(data_dir=['/data/yinjyun/projects/vae-audio/dataset/myAudioDataset/m64-5s'],
+    train_dl = CollectDataLoader(data_dir=['dataset/myAudioDataset/m64-5s'],
                                  batch_size=8, shuffle=True, validation_split=0.1, num_workers=1, subset='train')
     # specify subset as test to load the testing data only
-    test_dl = CollectDataLoader(data_dir=['/data/yinjyun/projects/vae-audio/dataset/myAudioDataset/m64-5s'],
+    test_dl = CollectDataLoader(data_dir=['dataset/myAudioDataset/m64-5s'],
                                  batch_size=8, shuffle=True, validation_split=0.0, num_workers=1, subset='test')
     # specify subset as None to load all the data
-    dl = CollectDataLoader(data_dir=['/data/yinjyun/projects/vae-audio/dataset/myAudioDataset/m64-5s'],
+    dl = CollectDataLoader(data_dir=['dataset/myAudioDataset/m64-5s'],
                                  batch_size=8, shuffle=True, validation_split=0.2, num_workers=1, subset=None)
     # refer to PyTorch Doc. for DataLoader for further detail

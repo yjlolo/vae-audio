@@ -1,10 +1,10 @@
 {   
     "name": "m64-5s",
-    "save_dir": "/data/yinjyun/projects/vae-audio/dataset/myAudioDataset/",
+    "save_dir": "dataset/myAudioDataset/",
     "dataset": {
         "type": "CollectData",
         "args": {
-            "path_to_dataset": ["/data/yinjyun/projects/vae-audio/dataset/myAudioDataset/audio"],
+            "path_to_dataset": ["dataset/myAudioDataset/audio"],
             "extension": ["wav", "npy"]
         }
     },
