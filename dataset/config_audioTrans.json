@@ -1,0 +1,53 @@
+{   
+    "dataset": {
+        "type": "CollectData",
+        "args": {
+            "path_to_dataset": ["/data/yinjyun/projects/vae-audio/dataset/myAudioDataset/audio"]
+        }
+    },
+    "transform1": {
+        "type": "AudioRead",
+        "args": {
+            "sr": 22050,
+            "duration": 5
+        }
+    },
+    "transform2": {
+        "type": "PadAudio",
+        "args": {
+            "sr": 22050,
+            "pad_to": 5
+        }
+    },
+    "transform3": {
+        "type": "Zscore",
+        "args": {
+            "divide_sigma": false
+        }
+    },
+    "transform4": {
+        "type": "Spectrogram",
+        "args": {
+            "sr": 22050,
+            "n_fft": 2048,
+            "hop_size": 735,
+            "n_band": 64,
+            "spec_type": "mel"
+        }
+    },
+    "transform5": {
+        "type": "MinMaxNorm",
+        "args": {
+            "min_val": -1,
+            "max_val": 1
+        }
+    },
+    "transform6": {
+        "type": "TransposeNumpy"
+    },
+    "transform7": {
+        "type": "ToTensor"
+    },
+    "save_dir": "/data/yinjyun/projects/vae-audio/dataset/myAudioDataset/",
+    "save_subdir": "spec"
+}
