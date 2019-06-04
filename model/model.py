@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from base import BaseModel, BaseVAE
+from base import BaseModel, BaseVAE, BaseGMVAE
 
 
 class MnistModel(BaseModel):
@@ -153,7 +153,7 @@ class SpecVAE(BaseVAE):
 
         # Construct encoder and Gaussian layers
         self.encoder = spec_conv2d(n_convLayer, n_convChannel, self.n_freqBand, filter_size, stride)
-        self.flat_size, self.encoder_outputSize = self.infer_flat_size()
+        self.flat_size, self.encoder_outputSize = self._infer_flat_size()
         self.encoder_fc = fc(n_fcLayer, [self.flat_size, *n_fcChannel], activation='tanh', batchNorm=True)
         self.mu_fc = fc(1, [n_fcChannel[-1], latent_dim], activation=None, batchNorm=False)
         self.logvar_fc = fc(1, [n_fcChannel[-1], latent_dim], activation=None, batchNorm=False)
@@ -163,7 +163,7 @@ class SpecVAE(BaseVAE):
                              activation='tanh', batchNorm=True)
         self.decoder = spec_deconv2d(n_convLayer, n_convChannel, self.n_freqBand, filter_size, stride)
 
-    def infer_flat_size(self):
+    def _infer_flat_size(self):
         encoder_output = self.encoder(torch.ones(1, *self.input_size))
         return int(np.prod(encoder_output.size()[1:])), encoder_output.size()[1:]
 
@@ -176,13 +176,80 @@ class SpecVAE(BaseVAE):
 
         return mu, logvar, z
 
-    def decode(self, x):
-        fc_output = self.decoder_fc(x)
-        y = self.decoder(fc_output.view(-1, *self.encoder_outputSize))
-        return y
+    def decode(self, z):
+        h = self.decoder_fc(z)
+        x_recon = self.decoder(h.view(-1, *self.encoder_outputSize))
+        return x_recon
 
     def forward(self, x):
         mu, logvar, z = self.encode(x)
         x_recon = self.decode(z)
         # print(x_recon.size(), mu.size(), var.size(), z.size())
         return x_recon, mu, logvar, z
+
+
+class Conv1dGMVAE(BaseGMVAE):
+    def __init__(self, input_size=(128, 1, 20), latent_dim=16, n_component=12,
+                 pow_exp=0, logvar_trainable=False, is_featExtract=False):
+        super(Conv1dGMVAE, self).__init__(input_size, latent_dim, n_component, is_featExtract)
+        self.n_freqBand, self.n_contextWin, self.n_channel = input_size[0], input_size[2], input_size[1]
+        self.pow_exp, self.logvar_trainable = pow_exp, logvar_trainable
+        self._build_logvar_lookup(pow_exp=pow_exp, logvar_trainable=logvar_trainable)
+
+        self.encoder = nn.Sequential(
+            nn.Conv1d(self.n_channel, 512, 3, 1),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Conv1d(512, 512, 3, 1),
+            nn.BatchNorm1d(512),
+            nn.ReLU()
+        )
+        self.flat_size, self.encoder_outputSize = self._infer_flat_size(self.encoder)
+
+        self.encoder_fc = nn.Sequential(
+            nn.Linear(self.flat_size, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU()
+        )
+        self.lin_mu = nn.Linear(512, latent_dim)
+        self.lin_logvar = nn.Linear(512, latent_dim)
+        self.decoder_fc = nn.Sequential(
+            nn.Linear(latent_dim, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Linear(512, self.flat_size),
+            nn.BatchNorm1d(self.flat_size),
+            nn.ReLU()
+        )
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose1d(512, 512, 3, 1),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.ConvTranspose1d(512, self.n_channel, 3, 1),
+            nn.Tanh()
+        )
+
+    def _infer_flat_size(self):
+        encoder_output = self.encoder(torch.ones(1, *self.input_size))
+        return int(np.prod(encoder_output.size()[1:])), encoder_output.size()[1:]
+
+    def encode(self, x):
+        h = self.encoder(x)
+        h2 = self.encoder_fc(h.view(-1, self.flat_size))
+        mu = self.mu_fc(h2)
+        logvar = self.logvar_fc(h2)
+        mu, logvar, z = self._infer_latent(mu, logvar)
+        logLogit_qy_x, qy_x, y = self._infer_class(z)
+
+        return mu, logvar, z, logLogit_qy_x, qy_x, y
+
+    def decode(self, z):
+        h = self.decoder_fc(z)
+        x_recon = self.decoder(h.view(-1, *self.encoder_outputSize))
+        return x_recon
+
+    def forward(self, x):
+        mu, logvar, z, logLogit_qy_x, qy_x, y = self.encode(x)
+        x_recon = self.decode(z)
+
+        return x_recon, mu, logvar, z, logLogit_qy_x, qy_x, y
