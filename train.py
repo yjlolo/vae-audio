@@ -6,7 +6,8 @@ import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
 from parse_config import ConfigParser
-from trainer import SpecVaeTrainer
+import trainer.trainer as module_trainer
+# from trainer import SpecVaeTrainer
 
 
 def main(config):
@@ -30,12 +31,11 @@ def main(config):
 
     lr_scheduler = config.initialize('lr_scheduler', torch.optim.lr_scheduler, optimizer)
 
-    trainer = SpecVaeTrainer(model, loss, metrics, optimizer,
-                             config=config,
-                             data_loader=data_loader,
-                             valid_data_loader=valid_data_loader,
-                             lr_scheduler=lr_scheduler)
-
+    trainer = getattr(module_trainer, config['trainer']['type'])(model, loss, metrics, optimizer,
+                                                                    config=config,
+                                                                    data_loader=data_loader,
+                                                                    valid_data_loader=valid_data_loader,
+                                                                    lr_scheduler=lr_scheduler)
     trainer.train()
 
 

@@ -118,7 +118,7 @@ class BaseGMVAE(BaseModel):
         self.logvar_lookup.weight.data[torch.le(self.logvar_lookup.weight, self.logvar_bound)] = self.logvar_bound
 
     def _infer_class(self, q_z):
-        logLogit_qy_x, qy_x = approx_qy_x(q_z, self.mu_lookup, self.logvar_lookup, k=self.n_class)
+        logLogit_qy_x, qy_x = approx_qy_x(q_z, self.mu_lookup, self.logvar_lookup, n_component=self.n_component)
         val, y = torch.max(qy_x, dim=1)
         return logLogit_qy_x, qy_x, y
 
@@ -131,7 +131,7 @@ class BaseGMVAE(BaseModel):
 
 def sampling_gaussian(mu, logvar):
     sigma = torch.sqrt(torch.exp(logvar))
-    eps = torch.distributinos.normal.Normal(0, 1).sample(sample_shape=sigma.size())
+    eps = torch.distributions.normal.Normal(0, 1).sample(sample_shape=sigma.size())
     z = mu + sigma * eps  # reparameterization trick
     return mu, logvar, z
 

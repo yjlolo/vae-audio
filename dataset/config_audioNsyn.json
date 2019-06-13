@@ -1,0 +1,47 @@
+{   
+    "name": "nsyn-mel-128-4",
+    "save_dir": "/data/yinjyun/datasets/nsynth/subset/",
+    "dataset": {
+        "type": "NsynthSubset",
+        "args": {
+            "path_to_dataset": "/data/yinjyun/datasets/nsynth/subset/audio"
+        }
+    },
+    "transform1": {
+        "type": "AudioRead",
+        "args": {
+            "sr": 16000,
+            "duration": 4
+        }
+    },
+    "transform2": {
+        "type": "PadAudio",
+        "args": {
+            "sr": 16000,
+            "pad_to": 4
+        }
+    },
+    "transform3": {
+        "type": "Zscore",
+        "args": {
+            "divide_sigma": false
+        }
+    },
+    "transform4": {
+        "type": "Spectrogram",
+        "args": {
+            "sr": 16000,
+            "n_fft": 1024,
+            "hop_size": 256,
+            "n_band": 128,
+            "spec_type": "mel"
+        }
+    },
+    "transform5": {
+        "type": "MinMaxNorm",
+        "args": {
+            "min_val": -1, 
+            "max_val": 1
+        }
+    }
+}

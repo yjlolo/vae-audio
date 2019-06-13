@@ -1,30 +1,26 @@
 {
-    "name": "SpecVAE",
+    "name": "Conv1dGMVAE",
     "n_gpu": 1,
 
     "arch": {
-        "type": "SpecVAE",
+        "type": "Conv1dGMVAE",
         "args": {
-            "input_size": [1, 64, 15],
-            "latent_dim": 32,
-            "is_featExtract": false,
-            "n_convLayer": 3,
-            "n_convChannel": [1, 32, 16, 8],
-            "filter_size": [1, 3, 3],
-            "stride": [1, 2, 2],
-            "n_fcLayer": 1,
-            "n_fcChannel": [256]
+            "input_size": [128, 251],
+            "latent_dim": 16,
+            "n_component": 12,
+            "pow_exp": 0,
+            "logvar_trainable": false,
+            "is_featExtract": false
         }
     },
     "data_loader": {
-        "type": "CollectDataLoader",
+        "type": "NsynthSubsetLoader",
         "args":{
-            "data_dir": ["dataset/myAudioDataset/m64-5s"],
-            "batch_size": 32,
+            "data_dir": "/data/yinjyun/datasets/nsynth/subset/nsyn-mel-128-4",
+            "batch_size": 256,
             "shuffle": true,
             "validation_split": 0.1,
-            "num_workers": 0,
-            "subset": "train"
+            "num_workers": 0
         }
     },
     "optimizer": {
@@ -35,7 +31,7 @@
             "amsgrad": true
         }
     },
-    "loss": "vae_loss",
+    "loss": "gmvae_loss",
     "metrics": [
         "my_metric", "my_metric2"
     ],
@@ -47,7 +43,7 @@
         }
     },
     "trainer": {
-        "type": "SpecVaeTrainer",
+        "type": "GMVAETrainer",
         "epochs": 1000,
 
         "save_dir": "saved/",

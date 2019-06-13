@@ -54,16 +54,19 @@ def main(config):
     # read, process (by transform functions in object dataset), and save
     start_time = time.time()
     for k in range(len(d)):
-        audio_path = d.path_to_data[k]
+        audio_path = str(d.path_to_data[k])
         print("Transforming %d-th audio ... %s" % (k, audio_path))
         idx, y, x = d[k]
 
-        split = audio_path.split('/')[-3]
-        file_savePath = os.path.join(processed_audio_savePath, split, y)
-        if not os.path.exists(file_savePath):
-            os.makedirs(file_savePath)
-        fname = audio_path.split('/')[-1].split('.')[0]  # replace this buggy and ugly style with Path lib
-        np.save(os.path.join(file_savePath, fname), x)
+        if config['dataset']['type'] == 'CollectData':
+            split = audio_path.split('/')[-3]
+            file_savePath = os.path.join(processed_audio_savePath, split, y)
+            if not os.path.exists(file_savePath):
+                os.makedirs(file_savePath)
+            fname = audio_path.split('/')[-1].split('.')[0]  # replace this buggy and ugly style with Path lib
+            np.save(os.path.join(file_savePath, fname), x)
+        else:
+            np.save(os.path.join(processed_audio_savePath, d.path_to_data[k].stem), x)
 
     print("Processing time: %.2f seconds" % (time.time() - start_time))
 

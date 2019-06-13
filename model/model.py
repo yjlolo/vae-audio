@@ -5,25 +5,6 @@ import torch.nn.functional as F
 from base import BaseModel, BaseVAE, BaseGMVAE
 
 
-class MnistModel(BaseModel):
-    def __init__(self, num_classes=10):
-        super(MnistModel, self).__init__()
-        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
-        self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
-        self.conv2_drop = nn.Dropout2d()
-        self.fc1 = nn.Linear(320, 50)
-        self.fc2 = nn.Linear(50, num_classes)
-
-    def forward(self, x):
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
-        x = x.view(-1, 320)
-        x = F.relu(self.fc1(x))
-        x = F.dropout(x, training=self.training)
-        x = self.fc2(x)
-        return F.log_softmax(x, dim=1)
-
-
 def spec_conv2d(n_layer=3, n_channel=[1, 32, 16, 8], n_freqBand=64, filter_size=[1, 3, 3], stride=[1, 2, 2]):
     """
     Construction of conv. layers. Note the current implementation always effectively turn to 1-D conv,
@@ -189,10 +170,10 @@ class SpecVAE(BaseVAE):
 
 
 class Conv1dGMVAE(BaseGMVAE):
-    def __init__(self, input_size=(128, 1, 20), latent_dim=16, n_component=12,
+    def __init__(self, input_size=(128, 20), latent_dim=16, n_component=12,
                  pow_exp=0, logvar_trainable=False, is_featExtract=False):
         super(Conv1dGMVAE, self).__init__(input_size, latent_dim, n_component, is_featExtract)
-        self.n_freqBand, self.n_contextWin, self.n_channel = input_size[0], input_size[2], input_size[1]
+        self.n_channel = input_size[0]
         self.pow_exp, self.logvar_trainable = pow_exp, logvar_trainable
         self._build_logvar_lookup(pow_exp=pow_exp, logvar_trainable=logvar_trainable)
 
@@ -204,7 +185,7 @@ class Conv1dGMVAE(BaseGMVAE):
             nn.BatchNorm1d(512),
             nn.ReLU()
         )
-        self.flat_size, self.encoder_outputSize = self._infer_flat_size(self.encoder)
+        self.flat_size, self.encoder_outputSize = self._infer_flat_size()
 
         self.encoder_fc = nn.Sequential(
             nn.Linear(self.flat_size, 512),
@@ -230,14 +211,15 @@ class Conv1dGMVAE(BaseGMVAE):
         )
 
     def _infer_flat_size(self):
+        print(torch.ones(1, *self.input_size).shape)
         encoder_output = self.encoder(torch.ones(1, *self.input_size))
         return int(np.prod(encoder_output.size()[1:])), encoder_output.size()[1:]
 
     def encode(self, x):
         h = self.encoder(x)
         h2 = self.encoder_fc(h.view(-1, self.flat_size))
-        mu = self.mu_fc(h2)
-        logvar = self.logvar_fc(h2)
+        mu = self.lin_mu(h2)
+        logvar = self.lin_logvar(h2)
         mu, logvar, z = self._infer_latent(mu, logvar)
         logLogit_qy_x, qy_x, y = self._infer_class(z)
 
