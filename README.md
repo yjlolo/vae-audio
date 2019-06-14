@@ -5,6 +5,7 @@ For variational auto-encoders (VAEs) and audio/music lovers, based on PyTorch.
 The repo is just like myself, in a very early stage of development and is under construction. Suggestions are very welcome, as I am keen to learn and do it right.
 
 The project is built to facillitate my own research on using VAEs to model music audio. It provides 
+ - [ ] identical code in the paper [Learning Disentangled Representations of Timbre and Pitch for Musical Instrument Sounds Using Gaussian Mixture Variational Autoencoders]()
  - [x] [vanilla VAE](https://arxiv.org/abs/1312.6114)
  - [x] [Gaussian mixture VAE](https://arxiv.org/abs/1611.05148)
  - [ ] [vector-quantized VAE](https://arxiv.org/abs/1711.00937)
