@@ -5,18 +5,18 @@ import torch.nn.functional as F
 from base import BaseModel, BaseVAE, BaseGMVAE
 
 
-def spec_conv2d(n_layer=3, n_channel=[1, 32, 16, 8], n_freqBand=64, filter_size=[1, 3, 3], stride=[1, 2, 2]):
+def spec_conv2d(n_layer=3, n_channel=[64, 32, 16, 8], filter_size=[1, 3, 3], stride=[1, 2, 2]):
     """
     Construction of conv. layers. Note the current implementation always effectively turn to 1-D conv,
     inspired by https://arxiv.org/pdf/1704.04222.pdf.
     :param n_layer: number of conv. layers
-    :param n_channel: in/output number of channels for each layer ( len(n_channel) = n_layer + 1 )
-    :param n_freqBand: number of freqeuncy bands of input spectrograms
+    :param n_channel: in/output number of channels for each layer ( len(n_channel) = n_layer + 1 ).
+            The first channel is the number of freqeuncy bands of input spectrograms
     :param filter_size: the filter size (x-axis) for each layer ( len(filter_size) = n_layer )
     :param stride: filter stride size (x-axis) for each layer ( len(stride) = n_layer )
     :return: an object (nn.Sequential) constructed of specified conv. layers
     TODO:
-        [] directly use nn.Conv1d for implementation
+        [x] directly use nn.Conv1d for implementation
         [] allow different activations and batch normalization functions
     """
 
@@ -24,39 +24,31 @@ def spec_conv2d(n_layer=3, n_channel=[1, 32, 16, 8], n_freqBand=64, filter_size=
     ast_msg = "The following must fulfill: len(filter_size) == len(stride) == n_layer"
     assert len(filter_size) == len(stride) == n_layer, ast_msg
 
-    # construct first layer
-    conv_layers = [[
-        nn.Conv2d(n_channel[0], n_channel[1], (n_freqBand, filter_size[0]), (1, stride[0])),
-        nn.BatchNorm2d(n_channel[1]),
-        nn.Tanh()
-    ]]
-    # construct the rest
-    for i in range(n_layer - 1):
-        in_channel = n_channel[1:][i]
-        out_channel = n_channel[1:][i + 1]
-        conv_layers.append([
-            nn.Conv2d(in_channel, out_channel, (1, filter_size[1:][i]), (1, stride[1:][i])),
-            nn.BatchNorm2d(out_channel),
+    # construct layers
+    conv_layers = []
+    for i in range(n_layer):
+        in_channel, out_channel = n_channel[i:i + 2]
+        conv_layers += [
+            nn.Conv1d(in_channel, out_channel, filter_size[i], stride[i]),
+            nn.BatchNorm1d(out_channel),
             nn.Tanh()
-        ])
-
-    conv_layers = [j for i in conv_layers for j in i]
+        ]
 
     return nn.Sequential(*conv_layers)
 
 
-def spec_deconv2d(n_layer=3, n_channel=[1, 32, 16, 8], n_freqBand=64, filter_size=[1, 3, 3], stride=[1, 2, 2]):
+def spec_deconv2d(n_layer=3, n_channel=[64, 32, 16, 8], filter_size=[1, 3, 3], stride=[1, 2, 2]):
     """
     Construction of deconv. layers. Input the arguments in normal conv. order.
     E.g., n_channel = [1, 32, 16, 8] gives deconv. layers of [8, 16, 32, 1].
     :param n_layer: number of deconv. layers
     :param n_channel: in/output number of channels for each layer ( len(n_channel) = n_layer + 1 )
-    :param n_freqBand: number of freqeuncy bands of input spectrograms
+            The first channel is the number of freqeuncy bands of input spectrograms
     :param filter_size: the filter size (x-axis) for each layer ( len(filter_size) = n_layer )
     :param stride: filter stride size (x-axis) for each layer ( len(stride) = n_layer )
     :return: an object (nn.Sequential) constructed of specified deconv. layers.
     TODO:
-        [] directly use nn.Conv1d for implementation
+        [x] directly use nn.Conv1d for implementation
         [] allow different activations and batch normalization functions
     """
 
@@ -68,19 +60,18 @@ def spec_deconv2d(n_layer=3, n_channel=[1, 32, 16, 8], n_freqBand=64, filter_siz
 
     deconv_layers = []
     for i in range(n_layer - 1):
-        in_channel = n_channel[i]
-        out_channel = n_channel[i + 1]
-        deconv_layers.append([
-            nn.ConvTranspose2d(in_channel, out_channel, (1, filter_size[i]), (1, stride[i])),
-            nn.BatchNorm2d(out_channel),
+        in_channel, out_channel = n_channel[i:i + 2]
+        deconv_layers += [
+            nn.Conv1d(in_channel, out_channel, filter_size[i], stride[i]),
+            nn.BatchNorm1d(out_channel),
             nn.Tanh()
-        ])
+        ]
+
     # Construct the output layer
-    deconv_layers.append([
-        nn.ConvTranspose2d(n_channel[-2], n_channel[-1], (n_freqBand, filter_size[-1]), (1, stride[-1])),
+    deconv_layers += [
+        nn.ConvTranspose1d(n_channel[-2], n_channel[-1], filter_size[-1], stride[-1]),
         nn.Tanh()  # check the effect of with or without BatchNorm in this layer
-    ])
-    deconv_layers = [j for i in deconv_layers for j in i]
+    ]
 
     return nn.Sequential(*deconv_layers)
 
