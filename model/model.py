@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from base import BaseModel, BaseVAE, BaseGMVAE
 
 
-def spec_conv2d(n_layer=3, n_channel=[64, 32, 16, 8], filter_size=[1, 3, 3], stride=[1, 2, 2]):
+def spec_conv1d(n_layer=3, n_channel=[64, 32, 16, 8], filter_size=[1, 3, 3], stride=[1, 2, 2]):
     """
     Construction of conv. layers. Note the current implementation always effectively turn to 1-D conv,
     inspired by https://arxiv.org/pdf/1704.04222.pdf.
@@ -37,7 +37,7 @@ def spec_conv2d(n_layer=3, n_channel=[64, 32, 16, 8], filter_size=[1, 3, 3], str
     return nn.Sequential(*conv_layers)
 
 
-def spec_deconv2d(n_layer=3, n_channel=[64, 32, 16, 8], filter_size=[1, 3, 3], stride=[1, 2, 2]):
+def spec_deconv1d(n_layer=3, n_channel=[64, 32, 16, 8], filter_size=[1, 3, 3], stride=[1, 2, 2]):
     """
     Construction of deconv. layers. Input the arguments in normal conv. order.
     E.g., n_channel = [1, 32, 16, 8] gives deconv. layers of [8, 16, 32, 1].
@@ -121,7 +121,7 @@ class SpecVAE(BaseVAE):
         self.n_freqBand, self.n_contextWin = input_size
 
         # Construct encoder and Gaussian layers
-        self.encoder = spec_conv2d(n_convLayer, [self.n_freqBand] + n_convChannel, filter_size, stride)
+        self.encoder = spec_conv1d(n_convLayer, [self.n_freqBand] + n_convChannel, filter_size, stride)
         self.flat_size, self.encoder_outputSize = self._infer_flat_size()
         self.encoder_fc = fc(n_fcLayer, [self.flat_size, *n_fcChannel], activation='tanh', batchNorm=True)
         self.mu_fc = fc(1, [n_fcChannel[-1], latent_dim], activation=None, batchNorm=False)
@@ -130,7 +130,7 @@ class SpecVAE(BaseVAE):
         # Construct decoder
         self.decoder_fc = fc(n_fcLayer + 1, [self.latent_dim, *n_fcChannel[::-1], self.flat_size],
                              activation='tanh', batchNorm=True)
-        self.decoder = spec_deconv2d(n_convLayer, [self.n_freqBand] + n_convChannel, filter_size, stride)
+        self.decoder = spec_deconv1d(n_convLayer, [self.n_freqBand] + n_convChannel, filter_size, stride)
 
     def _infer_flat_size(self):
         encoder_output = self.encoder(torch.ones(1, *self.input_size))
