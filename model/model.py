@@ -97,16 +97,14 @@ def fc(n_layer, n_channel, activation='tanh', batchNorm=True):
             layer.append(nn.BatchNorm1d(n_channel[i + 1]))
         if activation:
             layer.append(nn.Tanh())
-        fc_layers.append(layer)
-
-    fc_layers = [j for i in fc_layers for j in i]
+        fc_layers += layer
 
     return nn.Sequential(*fc_layers)
 
 
 class SpecVAE(BaseVAE):
-    def __init__(self, input_size=(1, 64, 15), latent_dim=32, is_featExtract=False,
-                 n_convLayer=3, n_convChannel=[1, 32, 16, 8], filter_size=[1, 3, 3], stride=[1, 2, 2],
+    def __init__(self, input_size=(64, 15), latent_dim=32, is_featExtract=False,
+                 n_convLayer=3, n_convChannel=[32, 16, 8], filter_size=[1, 3, 3], stride=[1, 2, 2],
                  n_fcLayer=1, n_fcChannel=[256]):
         """
         Construction of VAE
@@ -120,11 +118,10 @@ class SpecVAE(BaseVAE):
         self.latent_dim = latent_dim
         self.is_featExtract = is_featExtract
 
-        self.n_freqBand = input_size[1]
-        self.n_contextWin = input_size[2]
+        self.n_freqBand, self.n_contextWin = input_size
 
         # Construct encoder and Gaussian layers
-        self.encoder = spec_conv2d(n_convLayer, n_convChannel, self.n_freqBand, filter_size, stride)
+        self.encoder = spec_conv2d(n_convLayer, [self.n_freqBand] + n_convChannel, filter_size, stride)
         self.flat_size, self.encoder_outputSize = self._infer_flat_size()
         self.encoder_fc = fc(n_fcLayer, [self.flat_size, *n_fcChannel], activation='tanh', batchNorm=True)
         self.mu_fc = fc(1, [n_fcChannel[-1], latent_dim], activation=None, batchNorm=False)
@@ -133,13 +130,17 @@ class SpecVAE(BaseVAE):
         # Construct decoder
         self.decoder_fc = fc(n_fcLayer + 1, [self.latent_dim, *n_fcChannel[::-1], self.flat_size],
                              activation='tanh', batchNorm=True)
-        self.decoder = spec_deconv2d(n_convLayer, n_convChannel, self.n_freqBand, filter_size, stride)
+        self.decoder = spec_deconv2d(n_convLayer, [self.n_freqBand] + n_convChannel, filter_size, stride)
 
     def _infer_flat_size(self):
         encoder_output = self.encoder(torch.ones(1, *self.input_size))
         return int(np.prod(encoder_output.size()[1:])), encoder_output.size()[1:]
 
     def encode(self, x):
+        if len(x.shape) == 4:
+            assert x.shape[1] == 1
+            x = x.squeeze(1)
+
         h = self.encoder(x)
         h2 = self.encoder_fc(h.view(-1, self.flat_size))
         mu = self.mu_fc(h2)
