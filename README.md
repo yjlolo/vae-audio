@@ -2,10 +2,10 @@
 For variational auto-encoders (VAEs) and audio/music lovers, based on PyTorch.
 
 ## Overview
-The repo is just like myself, in a very early stage of development and is under construction. Suggestions are very welcome, as I am keen to learn and do it right.
+The repo is under construction.
 
-The project is built to facillitate my own research on using VAEs to model music audio. It provides 
- - [ ] identical code in the paper [Learning Disentangled Representations of Timbre and Pitch for Musical Instrument Sounds Using Gaussian Mixture Variational Autoencoders](https://arxiv.org/pdf/1906.08152.pdf)
+The project is built to facillitate research on using VAEs to model audio. It provides 
+ - [ ] code for the paper [Learning Disentangled Representations of Timbre and Pitch for Musical Instrument Sounds Using Gaussian Mixture Variational Autoencoders](https://arxiv.org/pdf/1906.08152.pdf)
  - [x] [vanilla VAE](https://arxiv.org/abs/1312.6114)
  - [x] [Gaussian mixture VAE](https://arxiv.org/abs/1611.05148)
  - [ ] [vector-quantized VAE](https://arxiv.org/abs/1711.00937)
@@ -18,8 +18,7 @@ The project is built to facillitate my own research on using VAEs to model music
  - [ ] documentation
  - [ ] ...
 
-## Project Structure
-The structure is based on [PyTorch Template](https://github.com/victoresque/pytorch-template); please take a deep read beforehand. It might change to allow for a easier usage and to be more structural for this specific library.
+The project structure is based on [PyTorch Template](https://github.com/victoresque/pytorch-template).
 
 ## Requirements
 * torch 1.1.0
@@ -28,9 +27,9 @@ The structure is based on [PyTorch Template](https://github.com/victoresque/pyto
 ## Usage
 ### Audio Feature Extraction 
 1. Define customized `Dataset` classes in `dataset/datasets.py`
-2. Run `python dataset/audio_transform.py -c config_of_audio_transform.json` to compute audio features (e.g., spectrograms) and store
+2. Run `python dataset/audio_transform.py -c your_config_of_audio_transform.json` to compute audio features (e.g., spectrograms)
 3. Define customized `DataLoader` classes in `data_loader/data_loaders.py`
 ### Model Training
-Run `python train.py -c config_of_model_train.json`
+Run `python train.py -c your_config_of_model_train.json`
 
 ## To Be Continued
