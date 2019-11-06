@@ -62,7 +62,7 @@ def spec_deconv1d(n_layer=3, n_channel=[64, 32, 16, 8], filter_size=[1, 3, 3], s
     for i in range(n_layer - 1):
         in_channel, out_channel = n_channel[i:i + 2]
         deconv_layers += [
-            nn.Conv1d(in_channel, out_channel, filter_size[i], stride[i]),
+            nn.ConvTranspose1d(in_channel, out_channel, filter_size[i], stride[i]),
             nn.BatchNorm1d(out_channel),
             nn.Tanh()
         ]
