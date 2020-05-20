@@ -1,3 +1,5 @@
+UPDATE (20.5.20): I decided to isolate the code for reproducing the paper [Learning Disentangled Representations of Timbre and Pitch for Musical Instrument Sounds Using Gaussian Mixture Variational Autoencoders](https://arxiv.org/pdf/1906.08152.pdf) (up from [here](https://github.com/yjlolo/gmvae-synth)) from this repo.
+
 # vae-audio
 For variational auto-encoders (VAEs) and audio/music lovers, based on PyTorch.
 
@@ -5,7 +7,6 @@ For variational auto-encoders (VAEs) and audio/music lovers, based on PyTorch.
 The repo is under construction.
 
 The project is built to facillitate research on using VAEs to model audio. It provides 
- - [ ] code for the paper [Learning Disentangled Representations of Timbre and Pitch for Musical Instrument Sounds Using Gaussian Mixture Variational Autoencoders](https://arxiv.org/pdf/1906.08152.pdf)
  - [x] [vanilla VAE](https://arxiv.org/abs/1312.6114)
  - [x] [Gaussian mixture VAE](https://arxiv.org/abs/1611.05148)
  - [ ] [vector-quantized VAE](https://arxiv.org/abs/1711.00937)
@@ -16,7 +17,6 @@ The project is built to facillitate research on using VAEs to model audio. It pr
  - [ ] higher-level wrappers for easier use
  - [ ] easier installation
  - [ ] documentation
- - [ ] ...
 
 The project structure is based on [PyTorch Template](https://github.com/victoresque/pytorch-template).
 
